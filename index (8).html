@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>จองโต๊ะ · ร้านกาแฟใบไม้</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- =========================================================
+     ตั้งค่า Supabase: ใส่ URL และ anon key ของโปรเจกต์คุณตรงนี้
+     ========================================================= -->
+<script>
+  window.SUPABASE_URL = "https://gcujnqtyxonabpsufxmm.supabase.co";
+  window.SUPABASE_ANON_KEY = "sb_publishable_j0swcOEx54mhl7u650HLzg_r7A8u5co";
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+  :root {
+    --bg: #fbf7f1;
+    --paper: #ffffff;
+    --ink: #2a1d14;
+    --ink-soft: #6b5c4e;
+    --line: #e4d9cb;
+    --accent: #b5651d;
+    --accent-dark: #8f4f16;
+    --accent-tint: #f1ddc4;
+    --available: #4f7a5a;
+    --available-tint: #e5efe6;
+    --booked: #c9beb2;
+    --booked-bg: #f2ede6;
+    --danger: #a6402f;
+    --danger-tint: #f7e6e2;
+    --radius: 10px;
+    --shadow: 0 12px 28px -18px rgba(42, 29, 20, 0.45);
+  }
+
+  * { box-sizing: border-box; }
+
+  html {
+    scroll-padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Work Sans", -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  h1, h2, h3, .display {
+    font-family: "Fraunces", Georgia, serif;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin: 0;
+  }
+
+  button { font-family: inherit; }
+
+  a, button {
+    cursor: pointer;
+  }
+
+  :focus-visible {
+    outline: 2.5px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  /* ---------- Header ---------- */
+  header.top {
+    border-bottom: 1px solid var(--line);
+    background: var(--paper);
+  }
+
+  .top-inner {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 28px 20px 22px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    align-items: flex-end;
+    justify-content: space-between;
+  }
+
+  .brand .display {
+    font-size: clamp(28px, 4vw, 38px);
+    color: var(--ink);
+  }
+
+  .brand .tagline {
+    margin-top: 6px;
+    color: var(--ink-soft);
+    font-size: 15px;
+  }
+
+  .date-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .date-field label {
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+
+  .date-field input[type="date"] {
+    font-family: "Work Sans", sans-serif;
+    font-size: 16px;
+    padding: 10px 14px;
+    border: 1.5px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--paper);
+    color: var(--ink);
+    min-width: 190px;
+  }
+
+  .date-field input[type="date"]:focus {
+    border-color: var(--accent);
+  }
+
+  /* ---------- Main ---------- */
+  main {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 28px 20px 80px;
+  }
+
+  .hint-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    align-items: center;
+    margin-bottom: 18px;
+    color: var(--ink-soft);
+    font-size: 14px;
+  }
+
+  .legend {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .swatch {
+    width: 14px;
+    height: 14px;
+    border-radius: 4px;
+    display: inline-block;
+  }
+
+  .swatch.available { background: var(--available-tint); border: 1.5px solid var(--available); }
+  .swatch.booked { background: var(--booked-bg); border: 1.5px solid var(--booked); }
+
+  /* ---------- Grid table ---------- */
+  .grid-wrap {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    overflow-x: auto;
+    box-shadow: var(--shadow);
+  }
+
+  table.grid {
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
+    min-width: 720px;
+  }
+
+  table.grid th, table.grid td {
+    border-bottom: 1px solid var(--line);
+    border-right: 1px solid var(--line);
+    padding: 0;
+  }
+
+  table.grid th:last-child, table.grid td:last-child { border-right: none; }
+  table.grid tr:last-child td { border-bottom: none; }
+
+  table.grid thead th {
+    background: var(--paper);
+    font-weight: 600;
+    font-size: 13.5px;
+    color: var(--ink-soft);
+    padding: 14px 10px;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  table.grid thead th.corner {
+    position: sticky;
+    left: 0;
+    z-index: 3;
+    text-align: left;
+    padding-left: 18px;
+  }
+
+  table.grid tbody th {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background: var(--paper);
+    text-align: left;
+    padding: 14px 18px;
+    min-width: 128px;
+  }
+
+  table.grid tbody th .table-name {
+    font-family: "Fraunces", serif;
+    font-weight: 600;
+    font-size: 16px;
+    display: block;
+  }
+
+  table.grid tbody th .table-cap {
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    display: block;
+    margin-top: 2px;
+  }
+
+  td.slot {
+    text-align: center;
+    padding: 8px;
+    min-width: 88px;
+  }
+
+  .slot-btn {
+    width: 100%;
+    border: 1.5px solid var(--available);
+    background: var(--available-tint);
+    color: var(--available);
+    border-radius: 8px;
+    padding: 10px 6px;
+    font-size: 13.5px;
+    font-weight: 600;
+    transition: transform 0.08s ease, background 0.15s ease;
+  }
+
+  .slot-btn:hover { background: #d9ead9; }
+  .slot-btn:active { transform: scale(0.97); }
+
+  .slot-btn.booked {
+    border-color: var(--booked);
+    background: var(--booked-bg);
+    color: var(--ink-soft);
+    font-weight: 500;
+    cursor: not-allowed;
+  }
+
+  .slot-btn:disabled { pointer-events: none; }
+
+  .loading-row, .empty-note {
+    padding: 40px 20px;
+    text-align: center;
+    color: var(--ink-soft);
+    font-size: 15px;
+  }
+
+  /* ---------- Modal ---------- */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(42, 29, 20, 0.45);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 0;
+    z-index: 50;
+  }
+
+  .overlay.hidden { display: none; }
+
+  .modal {
+    background: var(--paper);
+    width: 100%;
+    max-width: 460px;
+    border-radius: 18px 18px 0 0;
+    padding: 26px 24px calc(26px + env(safe-area-inset-bottom, 0px));
+    box-shadow: 0 -12px 40px rgba(0,0,0,0.25);
+    max-height: 88vh;
+    overflow-y: auto;
+  }
+
+  @media (min-width: 640px) {
+    .overlay { align-items: center; }
+    .modal { border-radius: 18px; }
+  }
+
+  .modal h2 {
+    font-size: 22px;
+  }
+
+  .modal .subhead {
+    color: var(--ink-soft);
+    font-size: 14px;
+    margin-top: 6px;
+  }
+
+  .field {
+    margin-top: 18px;
+  }
+
+  .field label {
+    display: block;
+    font-size: 13.5px;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+  }
+
+  .field input {
+    width: 100%;
+    font-family: "Work Sans", sans-serif;
+    font-size: 16px;
+    padding: 11px 13px;
+    border: 1.5px solid var(--line);
+    border-radius: 8px;
+    background: var(--bg);
+    color: var(--ink);
+  }
+
+  .field input:focus { border-color: var(--accent); background: var(--paper); }
+
+  .capacity-note {
+    margin-top: 6px;
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+
+  .warn-box {
+    margin-top: 16px;
+    padding: 12px 14px;
+    background: var(--danger-tint);
+    border: 1px solid #e3bdb2;
+    border-radius: 10px;
+    font-size: 14px;
+    color: var(--danger);
+  }
+
+  .warn-box strong { display: block; margin-bottom: 4px; }
+
+  .suggest-btn {
+    margin-top: 10px;
+    background: var(--paper);
+    border: 1.5px solid var(--danger);
+    color: var(--danger);
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 13.5px;
+    font-weight: 600;
+  }
+
+  .modal-actions {
+    margin-top: 22px;
+    display: flex;
+    gap: 10px;
+  }
+
+  .btn-primary, .btn-secondary {
+    flex: 1;
+    padding: 13px 16px;
+    border-radius: 9px;
+    font-size: 15px;
+    font-weight: 600;
+    border: none;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+  }
+
+  .btn-primary:hover { background: var(--accent-dark); }
+  .btn-primary:disabled { background: var(--booked); cursor: not-allowed; }
+
+  .btn-secondary {
+    background: var(--paper);
+    border: 1.5px solid var(--line);
+    color: var(--ink);
+  }
+
+  /* ---------- Confirmation view ---------- */
+  .confirm {
+    text-align: center;
+    padding: 10px 0 4px;
+  }
+
+  .confirm .mark {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: var(--available-tint);
+    color: var(--available);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+    font-size: 26px;
+  }
+
+  .confirm h2 { font-size: 21px; }
+
+  .confirm-summary {
+    margin-top: 18px;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 16px 18px;
+    text-align: left;
+    font-size: 14.5px;
+  }
+
+  .confirm-summary div { display: flex; justify-content: space-between; padding: 5px 0; }
+  .confirm-summary span:first-child { color: var(--ink-soft); }
+  .confirm-summary span:last-child { font-weight: 600; }
+
+  /* ---------- Toast ---------- */
+  #toast {
+    position: fixed;
+    left: 50%;
+    bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+    transform: translateX(-50%) translateY(20px);
+    background: var(--ink);
+    color: #fff;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-size: 14px;
+    max-width: 90vw;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    z-index: 80;
+  }
+
+  #toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  #toast.error { background: var(--danger); }
+
+  footer.note {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 0 20px 40px;
+    color: var(--ink-soft);
+    font-size: 13px;
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-inner">
+    <div class="brand">
+      <div class="display">ร้านกาแฟใบไม้</div>
+      <div class="tagline">จองโต๊ะล่วงหน้า ไม่ต้องสมัครสมาชิก เลือกวันและเวลาที่สะดวกได้เลย</div>
+    </div>
+    <div class="date-field">
+      <label for="dateInput">เลือกวันที่ต้องการจอง</label>
+      <input type="date" id="dateInput" />
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="hint-row">
+    <span id="rangeHint">ร้านเปิดให้จอง 11:00–20:00 (คิวละ 1 ชั่วโมง)</span>
+    <span class="legend"><span class="swatch available"></span>ว่าง</span>
+    <span class="legend"><span class="swatch booked"></span>ไม่ว่าง</span>
+  </div>
+
+  <div class="grid-wrap">
+    <table class="grid" id="gridTable">
+      <thead>
+        <tr id="headRow">
+          <th class="corner">โต๊ะ / เวลา</th>
+        </tr>
+      </thead>
+      <tbody id="gridBody">
+        <tr><td colspan="11"><div class="loading-row">กำลังโหลดข้อมูล...</div></td></tr>
+      </tbody>
+    </table>
+  </div>
+</main>
+
+<footer class="note">
+  ต้องการยกเลิกหรือแก้ไขการจอง กรุณาติดต่อร้านโดยตรง ทางร้านขอสงวนสิทธิ์ยกเลิกโต๊ะที่มาสายเกิน 15 นาที
+</footer>
+
+<!-- Booking form modal -->
+<div class="overlay hidden" id="overlay">
+  <div class="modal" id="modalContent"></div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---------- Config ----------
+  const TIME_SLOTS = ["11:00","12:00","13:00","14:00","15:00","16:00","17:00","18:00","19:00","20:00"];
+
+  if (!window.SUPABASE_URL || window.SUPABASE_URL.indexOf("YOUR-PROJECT-ID") !== -1) {
+    document.getElementById("gridBody").innerHTML =
+      '<tr><td colspan="11"><div class="loading-row">⚠️ ยังไม่ได้ตั้งค่า Supabase URL / anon key ในไฟล์นี้ (ดูส่วนบนสุดของ index.html)</div></td></tr>';
+  }
+
+  const supabaseClient = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+
+  // ---------- State ----------
+  let tables = [];          // [{id, name, capacity}]
+  let bookedSet = new Set(); // "tableId_timeSlot"
+  let selectedDate = todayStr();
+  let pendingSelection = null; // {tableId, tableName, capacity, timeSlot}
+
+  // ---------- DOM ----------
+  const dateInput = document.getElementById("dateInput");
+  const headRow = document.getElementById("headRow");
+  const gridBody = document.getElementById("gridBody");
+  const overlay = document.getElementById("overlay");
+  const modalContent = document.getElementById("modalContent");
+  const toast = document.getElementById("toast");
+
+  dateInput.min = todayStr();
+  dateInput.value = selectedDate;
+  dateInput.addEventListener("change", () => {
+    selectedDate = dateInput.value || todayStr();
+    loadAndRender();
+  });
+
+  overlay.addEventListener("click", (e) => {
+    if (e.target === overlay) closeModal();
+  });
+
+  init();
+
+  async function init() {
+    renderHead();
+    await loadTables();
+    await loadAndRender();
+  }
+
+  function todayStr() {
+    const d = new Date();
+    const off = d.getTimezoneOffset();
+    const local = new Date(d.getTime() - off * 60000);
+    return local.toISOString().slice(0, 10);
+  }
+
+  function renderHead() {
+    TIME_SLOTS.forEach((t) => {
+      const th = document.createElement("th");
+      th.textContent = t;
+      headRow.appendChild(th);
+    });
+  }
+
+  async function loadTables() {
+    const { data, error } = await supabaseClient
+      .from("tables")
+      .select("id, name, capacity")
+      .order("id", { ascending: true });
+
+    if (error) {
+      showToast("โหลดข้อมูลโต๊ะไม่สำเร็จ: " + error.message, true);
+      return;
+    }
+    tables = data || [];
+  }
+
+  async function loadAndRender() {
+    gridBody.innerHTML = '<tr><td colspan="11"><div class="loading-row">กำลังโหลดข้อมูล...</div></td></tr>';
+
+    const { data, error } = await supabaseClient
+      .from("reservations_public")
+      .select("table_id, time_slot")
+      .eq("reservation_date", selectedDate);
+
+    if (error) {
+      gridBody.innerHTML = '<tr><td colspan="11"><div class="loading-row">โหลดตารางไม่สำเร็จ: ' + escapeHtml(error.message) + '</div></td></tr>';
+      return;
+    }
+
+    bookedSet = new Set((data || []).map((r) => r.table_id + "_" + r.time_slot));
+    renderGrid();
+  }
+
+  function renderGrid() {
+    gridBody.innerHTML = "";
+
+    if (!tables.length) {
+      gridBody.innerHTML = '<tr><td colspan="11"><div class="empty-note">ยังไม่มีข้อมูลโต๊ะในระบบ</div></td></tr>';
+      return;
+    }
+
+    tables.forEach((table) => {
+      const tr = document.createElement("tr");
+
+      const th = document.createElement("th");
+      th.innerHTML =
+        '<span class="table-name">' + escapeHtml(table.name) + '</span>' +
+        '<span class="table-cap">นั่งได้สูงสุด ' + table.capacity + ' คน</span>';
+      tr.appendChild(th);
+
+      TIME_SLOTS.forEach((slot) => {
+        const td = document.createElement("td");
+        td.className = "slot";
+        const isBooked = bookedSet.has(table.id + "_" + slot);
+
+        const btn = document.createElement("button");
+        btn.className = "slot-btn" + (isBooked ? " booked" : "");
+        btn.textContent = isBooked ? "ไม่ว่าง" : "ว่าง";
+        btn.setAttribute("aria-label", table.name + " เวลา " + slot + (isBooked ? " ไม่ว่าง" : " ว่าง กดเพื่อจอง"));
+        if (isBooked) {
+          btn.disabled = true;
+        } else {
+          btn.addEventListener("click", () => openBookingForm(table, slot));
+        }
+        td.appendChild(btn);
+        tr.appendChild(td);
+      });
+
+      gridBody.appendChild(tr);
+    });
+  }
+
+  // ---------- Booking form ----------
+  function openBookingForm(table, slot) {
+    pendingSelection = { tableId: table.id, tableName: table.name, capacity: table.capacity, timeSlot: slot };
+    renderFormStep();
+    overlay.classList.remove("hidden");
+  }
+
+  function closeModal() {
+    overlay.classList.add("hidden");
+    modalContent.innerHTML = "";
+    pendingSelection = null;
+  }
+
+  function renderFormStep(warning) {
+    const p = pendingSelection;
+    modalContent.innerHTML =
+      '<h2>ยืนยันการจอง</h2>' +
+      '<div class="subhead">' + escapeHtml(p.tableName) + ' · ' + formatDateTh(selectedDate) + ' · เวลา ' + p.timeSlot + '</div>' +
+      '<div class="field"><label for="fName">ชื่อผู้จอง</label><input type="text" id="fName" placeholder="เช่น คุณสมชาย" autocomplete="name" /></div>' +
+      '<div class="field"><label for="fPhone">เบอร์โทร</label><input type="tel" id="fPhone" placeholder="เช่น 081-234-5678" autocomplete="tel" /></div>' +
+      '<div class="field">' +
+        '<label for="fParty">จำนวนคน</label>' +
+        '<input type="number" id="fParty" min="1" step="1" placeholder="เช่น 2" />' +
+        '<div class="capacity-note">โต๊ะนี้นั่งได้สูงสุด ' + p.capacity + ' คน</div>' +
+      '</div>' +
+      '<div id="warnSlot"></div>' +
+      '<div class="modal-actions">' +
+        '<button class="btn-secondary" id="cancelBtn">ยกเลิก</button>' +
+        '<button class="btn-primary" id="submitBtn">ยืนยันการจอง</button>' +
+      '</div>';
+
+    document.getElementById("cancelBtn").addEventListener("click", closeModal);
+    document.getElementById("submitBtn").addEventListener("click", handleSubmit);
+
+    if (warning) {
+      document.getElementById("warnSlot").innerHTML = warning;
+    }
+  }
+
+  function findLargerAvailableTable(partySize, excludeTableId, timeSlot) {
+    return tables
+      .filter((t) => t.id !== excludeTableId && t.capacity >= partySize)
+      .filter((t) => !bookedSet.has(t.id + "_" + timeSlot))
+      .sort((a, b) => a.capacity - b.capacity)[0];
+  }
+
+  async function handleSubmit() {
+    const p = pendingSelection;
+    const name = document.getElementById("fName").value.trim();
+    const phone = document.getElementById("fPhone").value.trim();
+    const partyRaw = document.getElementById("fParty").value;
+    const party = parseInt(partyRaw, 10);
+    const warnSlot = document.getElementById("warnSlot");
+    warnSlot.innerHTML = "";
+
+    if (!name) { warnSlot.innerHTML = warnBox("กรุณากรอกชื่อผู้จอง"); return; }
+    if (!phone) { warnSlot.innerHTML = warnBox("กรุณากรอกเบอร์โทร"); return; }
+    if (!party || party < 1) { warnSlot.innerHTML = warnBox("กรุณากรอกจำนวนคนให้ถูกต้อง"); return; }
+
+    if (party > p.capacity) {
+      const bigger = findLargerAvailableTable(party, p.tableId, p.timeSlot);
+      let msg = '<strong>จำนวนคนเกินความจุของโต๊ะนี้</strong>โต๊ะ ' + escapeHtml(p.tableName) + ' นั่งได้สูงสุด ' + p.capacity + ' คน';
+      warnSlot.innerHTML = warnBoxRaw(msg, bigger ? { tableId: bigger.id, tableName: bigger.name, capacity: bigger.capacity, timeSlot: p.timeSlot } : null);
+      if (bigger) {
+        document.getElementById("useSuggestedBtn").addEventListener("click", () => {
+          pendingSelection = { tableId: bigger.id, tableName: bigger.name, capacity: bigger.capacity, timeSlot: p.timeSlot };
+          renderFormStep();
+          document.getElementById("fName").value = name;
+          document.getElementById("fPhone").value = phone;
+          document.getElementById("fParty").value = party;
+        });
+      }
+      return;
+    }
+
+    const submitBtn = document.getElementById("submitBtn");
+    submitBtn.disabled = true;
+    submitBtn.textContent = "กำลังบันทึก...";
+
+    // Atomic check-then-insert via RPC (see setup notes) — prevents race conditions
+    const { data, error } = await supabaseClient.rpc("book_reservation", {
+      p_table_id: p.tableId,
+      p_date: selectedDate,
+      p_time_slot: p.timeSlot,
+      p_customer_name: name,
+      p_phone: phone,
+      p_party_size: party
+    });
+
+    if (error) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = "ยืนยันการจอง";
+      warnSlot.innerHTML = warnBox("เกิดข้อผิดพลาด: " + error.message);
+      return;
+    }
+
+    if (!data || data.success !== true) {
+      const err = data ? data.error : "unknown";
+      submitBtn.disabled = false;
+      submitBtn.textContent = "ยืนยันการจอง";
+
+      if (err === "slot_taken") {
+        warnSlot.innerHTML = warnBox("ขออภัย มีคนจองช่องนี้ไปก่อนแล้ว กำลังรีเฟรชตารางให้อัตโนมัติ");
+        await loadAndRender();
+        setTimeout(closeModal, 1400);
+      } else if (err === "capacity_exceeded") {
+        const cap = data.capacity || p.capacity;
+        warnSlot.innerHTML = warnBox("จำนวนคนเกินความจุของโต๊ะนี้ (สูงสุด " + cap + " คน)");
+      } else {
+        warnSlot.innerHTML = warnBox("บันทึกไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
+      }
+      return;
+    }
+
+    renderConfirmation(p, name);
+    await loadAndRender();
+  }
+
+  function renderConfirmation(p, name) {
+    modalContent.innerHTML =
+      '<div class="confirm">' +
+        '<div class="mark">✓</div>' +
+        '<h2>จองสำเร็จ</h2>' +
+        '<div class="subhead">ขอบคุณค่ะ/ครับ คุณ' + escapeHtml(name) + ' เราเตรียมโต๊ะไว้ให้แล้ว</div>' +
+        '<div class="confirm-summary">' +
+          '<div><span>โต๊ะ</span><span>' + escapeHtml(p.tableName) + '</span></div>' +
+          '<div><span>วันที่</span><span>' + formatDateTh(selectedDate) + '</span></div>' +
+          '<div><span>เวลา</span><span>' + p.timeSlot + ' น.</span></div>' +
+        '</div>' +
+        '<div class="modal-actions">' +
+          '<button class="btn-primary" id="doneBtn" style="flex:1">เสร็จสิ้น</button>' +
+        '</div>' +
+      '</div>';
+    document.getElementById("doneBtn").addEventListener("click", closeModal);
+  }
+
+  function warnBox(text) {
+    return '<div class="warn-box"><strong>แจ้งเตือน</strong>' + escapeHtml(text) + '</div>';
+  }
+
+  function warnBoxRaw(html, suggestion) {
+    let out = '<div class="warn-box">' + html;
+    if (suggestion) {
+      out += '<div>แนะนำโต๊ะที่ว่างและนั่งได้พอ: <strong>' + escapeHtml(suggestion.tableName) + '</strong> (สูงสุด ' + suggestion.capacity + ' คน)</div>';
+      out += '<button class="suggest-btn" id="useSuggestedBtn">ใช้โต๊ะนี้แทน</button>';
+    } else {
+      out += '<div>ไม่มีโต๊ะอื่นที่ว่างพอสำหรับจำนวนคนนี้ในช่วงเวลาเดียวกัน กรุณาเลือกเวลาอื่น</div>';
+    }
+    out += '</div>';
+    return out;
+  }
+
+  function showToast(msg, isError) {
+    toast.textContent = msg;
+    toast.className = isError ? "show error" : "show";
+    setTimeout(() => { toast.className = ""; }, 3200);
+  }
+
+  function formatDateTh(iso) {
+    const months = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
+    const [y, m, d] = iso.split("-").map(Number);
+    return d + " " + months[m - 1] + " " + (y + 543);
+  }
+
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+})();
+</script>
+</body>
+</html>
